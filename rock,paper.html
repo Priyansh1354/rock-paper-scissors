@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rock Paper Scissors</title>
+  <style>
+    body {
+      background: radial-gradient(circle at center, #000015, #000);
+      font-family: 'Orbitron', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: #00eaff;
+      margin: 0;
+    }
+    h1 {
+      color: #00eaff;
+      text-shadow: 0 0 10px #00ffff, 0 0 20px #0077ff;
+      margin-bottom: 15px;
+    }
+    .btn {
+      background: #020210;
+      color: #00d9ff;
+      font-size: 2rem;
+      border: 2px solid #00aaff;
+      border-radius: 12px;
+      padding: 15px 25px;
+      margin: 5px;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(0, 200, 255, 0.7);
+      transition: transform 0.2s, box-shadow 0.3s;
+    }
+    .btn:hover {
+      transform: scale(1.2);
+      background: #001f33;
+      color: #cfffff;
+      box-shadow: 0 0 40px rgba(0, 200, 255, 1);
+    }
+    #result {
+      margin-top: 15px;
+      font-size: 1.5rem;
+      font-weight: bold;
+      text-align: center;
+      color: #00ffea;
+      text-shadow: 0 0 10px #00ffff, 0 0 25px #00aaff;
+      min-height: 40px;
+    }
+    #moves {
+      font-size: 2.5rem;
+      margin-top: 8px;
+      text-shadow: 0 0 15px #00ffff, 0 0 30px #00aaff;
+    }
+    .scoreboard {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #00ffea;
+      text-shadow: 0 0 8px #00ffff, 0 0 20px #00aaff;
+    }
+    .reset-btn {
+      margin-top: 10px;
+      background: #ff0044;
+      color: white;
+      font-size: 1rem;
+      border: 2px solid #ff3366;
+      border-radius: 8px;
+      padding: 6px 14px;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(255, 50, 100, 0.7);
+      transition: transform 0.2s, box-shadow 0.3s;
+    }
+    .reset-btn:hover {
+      transform: scale(1.1);
+      background: #ff3366;
+      box-shadow: 0 0 30px rgba(255, 80, 120, 1);
+    }
+    .history {
+      margin-top: 20px;
+      width: 300px;
+      height: 150px;
+      overflow-y: auto;
+      border: 2px solid #00aaff;
+      border-radius: 8px;
+      padding: 8px;
+      background: rgba(0, 20, 40, 0.7);
+      box-shadow: 0 0 20px rgba(0, 200, 255, 0.3);
+      font-size: 0.9rem;
+    }
+    .history p {
+      margin: 4px 0;
+      color: #cfffff;
+      text-shadow: 0 0 5px #00ffff;
+    }
+  </style>
+</head>
+<body>
+  <h1>Rock Paper Scissors</h1>
+
+  <div>
+    <button class="btn" onclick="play('rock')">✊</button>
+    <button class="btn" onclick="play('paper')">🖐️</button>
+    <button class="btn" onclick="play('scissors')">✌️</button>
+  </div>
+
+  <div id="result"></div>
+  <div id="moves"></div>
+
+  <div class="scoreboard">
+    Player: <span id="playerScore">0</span> |
+    Computer: <span id="computerScore">0</span>
+  </div>
+
+  <button class="reset-btn" onclick="resetScore()">Reset Score</button>
+
+  <div class="history" id="historyLog"></div>
+
+  <script>
+    let playerScore = 0;
+    let computerScore = 0;
+    let round = 0;
+    let history = [];
+
+    // 🔄 Load from localStorage
+    window.onload = () => {
+      const saved = JSON.parse(localStorage.getItem("rpsData"));
+      if (saved) {
+        playerScore = saved.playerScore;
+        computerScore = saved.computerScore;
+        round = saved.round;
+        history = saved.history;
+        updateScoreboard();
+        renderHistory();
+      }
+    };
+
+    function play(playerMove) {
+      const randomNumber = Math.random();
+      let computerMove = '';
+      if (randomNumber < 1/3) computerMove = 'rock';
+      else if (randomNumber < 2/3) computerMove = 'paper';
+      else computerMove = 'scissors';
+
+      let result = '';
+      if (playerMove === computerMove) {
+        result = 'Tie!';
+      } else if (
+        (playerMove === 'rock' && computerMove === 'scissors') ||
+        (playerMove === 'paper' && computerMove === 'rock') ||
+        (playerMove === 'scissors' && computerMove === 'paper')
+      ) {
+        result = 'You Win!';
+        playerScore++;
+      } else {
+        result = 'You Lose!';
+        computerScore++;
+      }
+
+      round++;
+      const emoji = { rock: '✊', paper: '🖐️', scissors: '✌️' };
+      document.getElementById('result').innerHTML = result;
+      document.getElementById('moves').innerHTML = 
+        `${emoji[playerMove]} vs ${emoji[computerMove]}`;
+
+      addHistory(`Round ${round}: You ${emoji[playerMove]} | Comp ${emoji[computerMove]} → ${result}`);
+      updateScoreboard();
+      saveData();
+
+      if (playerScore === 10 || computerScore === 10) {
+        setTimeout(() => {
+          alert(playerScore === 10 ? "🎉 You won the match! 🎉" : "💀 Computer won the match!");
+          resetScore();
+        }, 200);
+      }
+    }
+
+    function addHistory(entry) {
+      history.push(entry);
+      if (history.length > 10) history.shift(); // ✅ Only keep last 10 rounds
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const log = document.getElementById('historyLog');
+      log.innerHTML = '';
+      history.forEach(h => {
+        const p = document.createElement('p');
+        p.textContent = h;
+        log.appendChild(p);
+      });
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function updateScoreboard() {
+      document.getElementById('playerScore').textContent = playerScore;
+      document.getElementById('computerScore').textContent = computerScore;
+    }
+
+    function resetScore() {
+      playerScore = 0;
+      computerScore = 0;
+      round = 0;
+      history = [];
+      updateScoreboard();
+      renderHistory();
+      document.getElementById('result').innerHTML = '';
+      document.getElementById('moves').innerHTML = '';
+      localStorage.removeItem("rpsData");
+    }
+
+    function saveData() {
+      localStorage.setItem("rpsData", JSON.stringify({
+        playerScore, computerScore, round, history
+      }));
+    }
+  </script>
+</body>
+</html>
